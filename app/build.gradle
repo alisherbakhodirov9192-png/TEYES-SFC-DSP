@@ -1,0 +1,17 @@
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.fhp009md'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.example.fhp009md'
+        minSdk 23
+        targetSdk 28
+        versionCode 1
+        versionName '0.1'
+    }
+}
