@@ -2,129 +2,122 @@
 package com.example.fhp009md;
 
 import android.app.Activity;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
+import android.content.pm.ActivityInfo;
+import android.content.pm.ProviderInfo;
 import android.os.Bundle;
 import android.graphics.Color;
-import android.view.Gravity;
-import android.widget.*;
 import android.graphics.Typeface;
+import android.view.Gravity;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 public class MainActivity extends Activity {
-
-    LinearLayout layout;
+    private LinearLayout layout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().setStatusBarColor(Color.rgb(10,15,25));
+        getWindow().setStatusBarColor(Color.rgb(10, 15, 25));
         getWindow().setNavigationBarColor(Color.BLACK);
 
         ScrollView scroll = new ScrollView(this);
         layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(20,25,20,25);
-        layout.setBackgroundColor(Color.rgb(10,15,25));
-
+        layout.setPadding(22, 26, 22, 26);
+        layout.setBackgroundColor(Color.rgb(10, 15, 25));
         scroll.addView(layout);
         setContentView(scroll);
 
-        title("CARROZZERIA SFC DSP");
-        subtitle("UNIVERSAL TEYES EDITION");
+        addText("CARROZZERIA SFC DSP", 24, true);
+        addText("TEYES DSP DIAGNOSTICS", 14, true);
+        addText("Faqat tekshiruv. Zavod EQ sozlamalari o'zgartirilmaydi.", 14, false);
 
-        section("SOUND FIELD CONTROL");
+        inspectPackage("com.syu.eq");
+        inspectPackage("com.syu.ms");
 
-        String[] effects = {
-            "OFF", "STUDIO", "CLUB",
-            "HALL", "DOME", "CONCERT"
-        };
+        addText("TEKSHIRUV TUGADI", 18, true);
+        addText("Natija ekranini saqlab yuboring.", 14, false);
+    }
 
-        Spinner sfc = new Spinner(this);
-        sfc.setAdapter(new ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            effects
-        ));
-        layout.addView(sfc);
+    private void inspectPackage(String packageName) {
+        addText("------------------------------", 12, false);
+        addText(packageName, 18, true);
 
-        section("EQUALIZER");
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(
+                packageName,
+                PackageManager.GET_ACTIVITIES |
+                PackageManager.GET_SERVICES |
+                PackageManager.GET_RECEIVERS |
+                PackageManager.GET_PROVIDERS
+            );
 
-        String[] bands = {
-            "60 Hz","120 Hz","250 Hz","500 Hz",
-            "1 kHz","2 kHz","4 kHz","8 kHz",
-            "16 kHz"
-        };
+            addText("HOLATI: O'RNATILGAN", 15, true);
+            addText("Versiya: " + info.versionName, 13, false);
 
-        for (String band : bands) {
-            TextView label = text(band);
-            layout.addView(label);
+            int count = 0;
 
-            SeekBar seek = new SeekBar(this);
-            seek.setMax(24);
-            seek.setProgress(12);
-            layout.addView(seek);
+            if (info.activities != null) {
+                for (ActivityInfo item : info.activities) {
+                    if (item.exported) {
+                        count++;
+                        addText("Activity: " + item.name, 12, false);
+                    }
+                }
+            }
+
+            if (info.services != null) {
+                for (ServiceInfo item : info.services) {
+                    if (item.exported) {
+                        count++;
+                        addText("Service: " + item.name, 12, false);
+                    }
+                }
+            }
+
+            if (info.receivers != null) {
+                for (ActivityInfo item : info.receivers) {
+                    if (item.exported) {
+                        count++;
+                        addText("Receiver: " + item.name, 12, false);
+                    }
+                }
+            }
+
+            if (info.providers != null) {
+                for (ProviderInfo item : info.providers) {
+                    if (item.exported) {
+                        count++;
+                        addText("Provider: " + item.name, 12, false);
+                    }
+                }
+            }
+
+            addText("Ochiq komponentlar: " + count, 13, true);
+
+        } catch (PackageManager.NameNotFoundException e) {
+            addText("TOPILMADI yoki ko'rinmayapti", 14, true);
+        } catch (Exception e) {
+            addText("Xato: " + e.getClass().getSimpleName(), 12, false);
+        }
+    }
+
+    private void addText(String value, int size, boolean bold) {
+        TextView view = new TextView(this);
+        view.setText(value);
+        view.setTextColor(Color.WHITE);
+        view.setTextSize(size);
+        view.setPadding(8, 9, 8, 9);
+
+        if (bold) {
+            view.setTypeface(null, Typeface.BOLD);
         }
 
-        section("BASS CONTROL");
-
-        addSlider("Bass Boost");
-        addSlider("Subwoofer Level");
-        addSlider("Stereo Width");
-        addSlider("3D Sound");
-
-        section("PRESETS");
-
-        String[] presets = {
-            "Custom", "Carrozzeria",
-            "Studio", "Club", "Concert"
-        };
-
-        Spinner preset = new Spinner(this);
-        preset.setAdapter(new ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            presets
-        ));
-        layout.addView(preset);
-
-        subtitle("TEYES UNIVERSAL DSP • VERSION 0.2");
-    }
-
-    void title(String value) {
-        TextView t = text(value);
-        t.setTextSize(25);
-        t.setTypeface(null, Typeface.BOLD);
-        t.setGravity(Gravity.CENTER);
-        layout.addView(t);
-    }
-
-    void section(String value) {
-        TextView t = text(value);
-        t.setTextSize(17);
-        t.setTypeface(null, Typeface.BOLD);
-        t.setPadding(0,25,0,12);
-        layout.addView(t);
-    }
-
-    void subtitle(String value) {
-        TextView t = text(value);
-        t.setTextSize(12);
-        t.setGravity(Gravity.CENTER);
-        layout.addView(t);
-    }
-
-    TextView text(String value) {
-        TextView t = new TextView(this);
-        t.setText(value);
-        t.setTextColor(Color.WHITE);
-        t.setPadding(8,8,8,8);
-        return t;
-    }
-
-    void addSlider(String name) {
-        layout.addView(text(name));
-        SeekBar bar = new SeekBar(this);
-        bar.setMax(100);
-        bar.setProgress(50);
-        layout.addView(bar);
+        layout.addView(view);
     }
 }
