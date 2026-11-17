@@ -2,122 +2,214 @@
 package com.example.fhp009md;
 
 import android.app.Activity;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ServiceInfo;
-import android.content.pm.ActivityInfo;
-import android.content.pm.ProviderInfo;
 import android.os.Bundle;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.view.Gravity;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Button;
+import android.widget.SeekBar;
+import android.media.AudioManager;
+import android.media.audiofx.Equalizer;
+import android.media.audiofx.PresetReverb;
 
 public class MainActivity extends Activity {
+
+    private Equalizer equalizer;
+    private PresetReverb reverb;
+    private AudioManager audioManager;
+    private TextView status;
+
     private LinearLayout layout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().setStatusBarColor(Color.rgb(10, 15, 25));
+        audioManager = (AudioManager)
+            getSystemService(AUDIO_SERVICE);
+
+        getWindow().setStatusBarColor(Color.BLACK);
         getWindow().setNavigationBarColor(Color.BLACK);
 
-        ScrollView scroll = new ScrollView(this);
         layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(22, 26, 22, 26);
-        layout.setBackgroundColor(Color.rgb(10, 15, 25));
-        scroll.addView(layout);
-        setContentView(scroll);
+        layout.setGravity(Gravity.CENTER);
+        layout.setPadding(25, 25, 25, 25);
+        layout.setBackgroundColor(Color.rgb(10,15,25));
 
-        addText("CARROZZERIA SFC DSP", 24, true);
-        addText("TEYES DSP DIAGNOSTICS", 14, true);
-        addText("Faqat tekshiruv. Zavod EQ sozlamalari o'zgartirilmaydi.", 14, false);
+        setContentView(layout);
 
-        inspectPackage("com.syu.eq");
-        inspectPackage("com.syu.ms");
+        addText("CARROZZERIA SFC DSP", 25);
 
-        addText("TEKSHIRUV TUGADI", 18, true);
-        addText("Natija ekranini saqlab yuboring.", 14, false);
+        addText("TEYES CC3L AUDIO CONTROL", 15);
+
+        status = addText("Tizim tayyor", 16);
+
+        addButton("STUDIO", () -> studio());
+
+        addButton("HALL", () -> hall());
+
+        addButton("OFF", () -> off());
+
+        addText("MASTER VOLUME", 18);
+
+        SeekBar volume = new SeekBar(this);
+
+        int max = audioManager.getStreamMaxVolume(
+            AudioManager.STREAM_MUSIC);
+
+        volume.setMax(max);
+
+        volume.setProgress(
+            audioManager.getStreamVolume(
+                AudioManager.STREAM_MUSIC));
+
+        volume.setOnSeekBarChangeListener(
+            new SeekBar.OnSeekBarChangeListener() {
+
+            public void onProgressChanged(
+                SeekBar seekBar, int value, boolean user) {
+
+                if (user) {
+                    audioManager.setStreamVolume(
+                        AudioManager.STREAM_MUSIC,
+                        value, 0);
+                }
+            }
+
+            public void onStartTrackingTouch(SeekBar s) {}
+
+            public void onStopTrackingTouch(SeekBar s) {}
+        });
+
+        layout.addView(volume);
+
+        initializeEffects();
     }
 
-    private void inspectPackage(String packageName) {
-        addText("------------------------------", 12, false);
-        addText(packageName, 18, true);
-
+    private void initializeEffects() {
         try {
-            PackageInfo info = getPackageManager().getPackageInfo(
-                packageName,
-                PackageManager.GET_ACTIVITIES |
-                PackageManager.GET_SERVICES |
-                PackageManager.GET_RECEIVERS |
-                PackageManager.GET_PROVIDERS
-            );
+            equalizer = new Equalizer(0, 0);
+            equalizer.setEnabled(false);
 
-            addText("HOLATI: O'RNATILGAN", 15, true);
-            addText("Versiya: " + info.versionName, 13, false);
+            reverb = new PresetReverb(0, 0);
+            reverb.setEnabled(false);
 
-            int count = 0;
+            status.setText("Audio effektlar yaratildi");
 
-            if (info.activities != null) {
-                for (ActivityInfo item : info.activities) {
-                    if (item.exported) {
-                        count++;
-                        addText("Activity: " + item.name, 12, false);
-                    }
-                }
-            }
-
-            if (info.services != null) {
-                for (ServiceInfo item : info.services) {
-                    if (item.exported) {
-                        count++;
-                        addText("Service: " + item.name, 12, false);
-                    }
-                }
-            }
-
-            if (info.receivers != null) {
-                for (ActivityInfo item : info.receivers) {
-                    if (item.exported) {
-                        count++;
-                        addText("Receiver: " + item.name, 12, false);
-                    }
-                }
-            }
-
-            if (info.providers != null) {
-                for (ProviderInfo item : info.providers) {
-                    if (item.exported) {
-                        count++;
-                        addText("Provider: " + item.name, 12, false);
-                    }
-                }
-            }
-
-            addText("Ochiq komponentlar: " + count, 13, true);
-
-        } catch (PackageManager.NameNotFoundException e) {
-            addText("TOPILMADI yoki ko'rinmayapti", 14, true);
         } catch (Exception e) {
-            addText("Xato: " + e.getClass().getSimpleName(), 12, false);
+            status.setText(
+                "Audio effekt xatosi: " +
+                e.getClass().getSimpleName());
         }
     }
 
-    private void addText(String value, int size, boolean bold) {
+    private void studio() {
+        try {
+            if (equalizer == null) {
+                initializeEffects();
+            }
+
+            if (equalizer == null) return;
+
+            if (reverb != null) {
+                reverb.setEnabled(false);
+            }
+
+            short bands = equalizer.getNumberOfBands();
+
+            for (short i = 0; i < bands; i++) {
+                equalizer.setBandLevel(i, (short) 0);
+            }
+
+            equalizer.setEnabled(true);
+
+            status.setText("STUDIO rejimi yoqildi");
+
+        } catch (Exception e) {
+            status.setText("STUDIO ishlamadi: " +
+                e.getClass().getSimpleName());
+        }
+    }
+
+    private void hall() {
+        try {
+            if (reverb == null) {
+                initializeEffects();
+            }
+
+            if (reverb == null) return;
+
+            if (equalizer != null) {
+                equalizer.setEnabled(false);
+            }
+
+            reverb.setPreset(
+                PresetReverb.PRESET_LARGEHALL);
+
+            reverb.setEnabled(true);
+
+            status.setText("HALL rejimi yoqildi");
+
+        } catch (Exception e) {
+            status.setText("HALL ishlamadi: " +
+                e.getClass().getSimpleName());
+        }
+    }
+
+    private void off() {
+        try {
+            if (equalizer != null) {
+                equalizer.setEnabled(false);
+            }
+
+            if (reverb != null) {
+                reverb.setEnabled(false);
+            }
+
+            status.setText("Effektlar o'chirildi");
+
+        } catch (Exception e) {
+            status.setText("O'chirish xatosi");
+        }
+    }
+
+    private TextView addText(String text, int size) {
         TextView view = new TextView(this);
-        view.setText(value);
+
+        view.setText(text);
         view.setTextColor(Color.WHITE);
         view.setTextSize(size);
-        view.setPadding(8, 9, 8, 9);
-
-        if (bold) {
-            view.setTypeface(null, Typeface.BOLD);
-        }
+        view.setGravity(Gravity.CENTER);
+        view.setPadding(10, 15, 10, 15);
 
         layout.addView(view);
+
+        return view;
+    }
+
+    private void addButton(String name, Runnable action) {
+        Button button = new Button(this);
+
+        button.setText(name);
+        button.setTextSize(18);
+
+        layout.addView(button);
+
+        button.setOnClickListener(v -> action.run());
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (equalizer != null) {
+            equalizer.release();
+        }
+
+        if (reverb != null) {
+            reverb.release();
+        }
     }
 }
